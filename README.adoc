@@ -1,0 +1,3 @@
+= MeritMonitor - ED Market Connector plugin
+
+MeritMonitor collects data about earned merits
