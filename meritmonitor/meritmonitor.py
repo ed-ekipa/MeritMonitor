@@ -272,7 +272,7 @@ class MeritMonitor:
                     response = requests.patch(url, json=payload, headers=headers)
             else:
                 self.logger.info("Šaljem novu Discord poruku")
-                response = requests.post(webhook_url, json=payload, headers=headers)
+                response = requests.post(f"{webhook_url}?wait=true", json=payload, headers=headers)
             response.raise_for_status()
 
         except requests.RequestException as e:
