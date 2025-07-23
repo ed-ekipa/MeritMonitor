@@ -2,7 +2,7 @@ import logging
 import os
 
 # Global log file path (can be changed before any logger is created)
-_global_log_file = "MeritMonitor.log"
+_global_log_file = "meritmonitor.log"
 
 def set_global_log_file(path: str):
     """

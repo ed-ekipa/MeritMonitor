@@ -68,7 +68,7 @@ class MeritMonitor:
             self.logger.error(f"Greška pri pokretanju plugina: {e}")
 
     def init_files(self, plugin_dir: str) -> None:
-        self.log_file = os.path.join(plugin_dir, "log.txt")
+        self.log_file = os.path.join(plugin_dir, "meritmonitor.log")
         self.settings_file = os.path.join(plugin_dir, "settings.json")
         self.report_data_file = os.path.join(plugin_dir, "report_data.json")
         self.lang_file = os.path.join(plugin_dir, "language.conf")
