@@ -1,3 +1,6 @@
-= MeritMonitor - ED Market Connector plugin
+= MeritMonitor - Elite Dangerous Market Connector plugin
 
-MeritMonitor collects data about earned merits
+MeritMonitor is an EDMC plugin that keeps track of earned PowerPlay
+merits.
+
+Stats are posted to Discord if a webhook URL is set in plugin settings.
