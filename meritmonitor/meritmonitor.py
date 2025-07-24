@@ -61,7 +61,7 @@ class MeritMonitor:
 
             self.db = Database(os.path.join(plugin_dir, "merits.db"))
 
-            self.load_today_merits()
+            self.load_full_pp_cycle()
 
             self.logger.info("Plugin MeritMonitor pokrenut")
         except Exception as e:
