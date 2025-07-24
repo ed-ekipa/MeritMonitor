@@ -10,6 +10,9 @@ import tkinter as tk
 from tkinter import StringVar, Toplevel, PhotoImage, Text
 import myNotebook as nb
 
+from queue import Queue, Empty
+from threading import Thread
+
 from meritmonitor.settings import Settings
 from meritmonitor.translations import Translations
 from meritmonitor.database import Database
@@ -42,9 +45,15 @@ class MeritMonitor:
     translations = None
     database = None
 
+    journal_queue: Queue = Queue()
+    should_run: bool = True
+
     def __init__(self, plugin_name: str, version: Version) -> None:
         self.plugin_name: str = plugin_name
         self.version: Version = version
+
+        self.worker_thread = Thread(target=self.worker, name='MeritMonitor worker')
+        self.worker_thread.daemon = True
 
     def plugin_start(self, plugin_dir: str) -> None:
         self.plugin_dir = plugin_dir
@@ -61,7 +70,8 @@ class MeritMonitor:
 
             self.db = Database(os.path.join(plugin_dir, "merits.db"))
 
-            self.load_full_pp_cycle()
+            self.logger.info("Pokrećem I/O nit")
+            self.worker_thread.start()
 
             self.logger.info("Plugin MeritMonitor pokrenut")
         except Exception as e:
@@ -152,11 +162,8 @@ class MeritMonitor:
             self.logger.info(f"Dodato: {merits} merita za {system_name} ({state})")
 
     def journal_entry(self, cmdr, is_beta, system, station, entry, state):
-        try:
-            self.process_journal_entry(entry)
-            self.update_live_status()
-        except Exception as e:
-            self.logger.error(f"Greška u journal_entry: {e}")
+        self.journal_queue.put(entry)
+        self.update_live_status()
 
     def get_plugin_frame(self, parent):
         frame = tk.Frame(parent)
@@ -168,8 +175,8 @@ class MeritMonitor:
         button_frame.pack(pady=5)
         tk.Button(button_frame, text=self.translations.translate("Prikaži izveštaj"), compound="left",
                    command=self.show_preview_modal).pack(side="left", padx=5)
-        tk.Button(button_frame, text=self.translations.translate("Učitaj ceo PP ciklus"), compound="left",
-                   command=self.load_full_pp_cycle).pack(side="left", padx=5)
+        #tk.Button(button_frame, text=self.translations.translate("Učitaj ceo PP ciklus"), compound="left",
+#                   command=self.load_full_pp_cycle).pack(side="left", padx=5)
 
         tk.Label(frame, textvariable=self.status_text).pack()
 
@@ -285,3 +292,28 @@ class MeritMonitor:
         self.db.upsert_discord_message(timestamp, new_message_id, message_hash)
         status_text = "Discord poruka ažurirana." if message_id else "Uspešno poslato na Discord."
         self.status_text.set(self.translations.translate(status_text))
+
+    def shut_down(self):
+        self.should_run = False
+
+    def worker(self):
+        self.status_text.set("Učitavam poslednji PP ciklus ...")
+        self.load_full_pp_cycle()
+        self.logger.info("Poslednji PP ciklus učitan.")
+        self.status_text.set("Poslednji PP ciklus učitan.")
+        while self.should_run:
+            entry = None
+
+            try:
+                self.logger.info(f"Blocking on queue: {type(self.journal_queue)}")
+                entry = self.journal_queue.get(block=True, timeout=5)
+            except Empty:
+                pass
+
+            if entry:
+                try:
+                    self.process_journal_entry(entry)
+                except Exception as e:
+                    self.logger.error(f"Greška u journal_entry: {e}")
+
+            self.update_live_status()

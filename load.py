@@ -23,7 +23,8 @@ def prefs_changed(cmdr, is_beta):
     return merit_monitor.on_preferences_closed(cmdr, is_beta)
 
 def plugin_stop():
-    return merit_monitor.on_preferences_closed("", False)
+    merit_monitor.on_preferences_closed("", False)
+    merit_monitor.shut_down()
 
 def journal_entry(cmdr, is_beta, system, station, entry, state):
     return merit_monitor.journal_entry(cmdr, is_beta, system, station, entry, state)
