@@ -28,7 +28,6 @@ class MeritMonitor:
 
     state_table = {
         "Unoccupied": 1.00,
-        "Occupied": 0.75,
         "Exploited": 0.65,
         "Fortified": 0.65,
         "Stronghold": 0.65,
@@ -37,9 +36,9 @@ class MeritMonitor:
 
     personal_total = 0
     live_personal_by_system = {}
-    live_system_by_system = {}
-    current_system_state = "Unoccupied"
-    last_known_system = "Nepoznato"
+    live_control_points_by_system = {}
+    last_seen_system = "Nepoznato"
+    last_seen_system_state = "Unoccupied"
     last_frame = None
     status_text = StringVar(value="Status: učitavanje...")
     plugin_dir = None
@@ -121,7 +120,7 @@ class MeritMonitor:
 
     def load_merits_since(self, timestamp):
         self.live_personal_by_system = {}
-        self.live_system_by_system = {}
+        self.live_control_points_by_system = {}
         journal_dir = self.get_journal_dir()
 
         for filename in sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log*"))):
@@ -135,7 +134,7 @@ class MeritMonitor:
                             ts = datetime.strptime(entry["timestamp"], "%Y-%m-%dT%H:%M:%SZ")
                             if ts < timestamp:
                                 continue
-                            self.process_journal_entry(entry)
+                            self.process_journal_entry(entry, None)
                         except Exception as e:
                             self.logger.error(f"Greška u liniji fajla {filename}: {e}")
             except Exception as e:
@@ -150,24 +149,24 @@ class MeritMonitor:
         thursday = self.get_last_thursday()
         self.load_merits_since(thursday)
 
-    def process_journal_entry(self, entry):
+    def process_journal_entry(self, entry, system=None):
         event = entry.get("event")
         if event in ["FSDJump", "Location"]:
-            self.last_known_system = entry.get("StarSystem", self.last_known_system)
-            self.current_system_state = entry.get("PowerplayState", self.current_system_state)
-        elif event in ["PowerplayMerits", "PowerplayVoucher"]:
-            system_name = entry.get("StarSystem", self.last_known_system or "Nepoznato")
-            merits = entry.get("MeritsGained") or entry.get("Merits") or 0
-            state = entry.get("PowerplayState", self.current_system_state)
-            multiplier = self.state_table.get(state, 1.0)
-            self.live_personal_by_system[system_name] = self.live_personal_by_system.get(system_name, 0) + merits
-            self.live_system_by_system[system_name] = self.live_system_by_system.get(system_name, 0) + (merits * multiplier / 4)
-            self.last_known_system = system_name
-            self.current_system_state = state
-            self.logger.info(f"Dodato: {merits} merita za {system_name} ({state})")
+            self.last_seen_system = entry.get("StarSystem", self.last_seen_system or "Nepoznato")
+            self.last_seen_system_state = entry.get("PowerplayState", self.last_seen_system_state)
+        elif event in ["PowerplayMerits"]:
+            net_merits_gained = entry.get("MeritsGained") or 0
+            multiplier = self.state_table.get(self.last_seen_system_state, 1.0)
+
+            gross_merits_gained = round(net_merits_gained / multiplier)
+            system_control_points_gained = round(gross_merits_gained * 0.25)
+
+            self.live_personal_by_system[self.last_seen_system] = self.live_personal_by_system.get(self.last_seen_system, 0) + net_merits_gained
+            self.live_control_points_by_system[self.last_seen_system] = self.live_control_points_by_system.get(self.last_seen_system, 0) + system_control_points_gained
+            self.logger.info(f"Dodato: {net_merits_gained} merita za {self.last_seen_system} ({self.last_seen_system_state})")
 
     def journal_entry(self, cmdr, is_beta, system, station, entry, state):
-        self.journal_queue.put(entry)
+        self.journal_queue.put((system, entry))
         self.update_live_status()
 
     def get_plugin_frame(self, parent):
@@ -222,7 +221,7 @@ class MeritMonitor:
 
     def update_live_status(self):
         total_p = sum(self.live_personal_by_system.values())
-        total_s = sum(self.live_system_by_system.values())
+        total_s = sum(self.live_control_points_by_system.values())
         self.status_text.set(f"Uživo: {int(total_p)} ličnih / {int(total_s)} sistemskih merita.")
 
     def show_preview_modal(self):
@@ -245,8 +244,8 @@ class MeritMonitor:
 
     def generate_report_text(self) -> str:
         text = f"📊 **{self.translations.translate('Sistemski meriti po sistemima:')}**\n\n"
-        for system in sorted(self.live_system_by_system):
-            s = int(self.live_system_by_system[system])
+        for system in sorted(self.live_control_points_by_system):
+            s = int(self.live_control_points_by_system[system])
             text += f"- `{system}`: **{s}**\n"
         return text
 
@@ -309,15 +308,16 @@ class MeritMonitor:
         self.status_text.set("Poslednji PP ciklus učitan.")
         while self.should_run:
             entry = None
+            system = None
 
             try:
-                entry = self.journal_queue.get(block=True, timeout=5)
+                system, entry = self.journal_queue.get(block=True, timeout=5)
             except Empty:
                 pass
 
             if entry:
                 try:
-                    self.process_journal_entry(entry)
+                    self.process_journal_entry(entry, system)
                 except Exception as e:
                     self.logger.error(f"Greška u journal_entry: {e}")
 
