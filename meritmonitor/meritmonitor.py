@@ -42,8 +42,10 @@ class MeritMonitor:
     last_known_system = "Nepoznato"
     last_frame = None
     status_text = StringVar(value="Status: učitavanje...")
+    plugin_dir = None
+    logger = None
     translations = None
-    database = None
+    db = None
 
     journal_queue: Queue = Queue()
     should_run: bool = True
@@ -71,7 +73,10 @@ class MeritMonitor:
             self.db = Database(os.path.join(plugin_dir, "merits.db"))
 
             self.logger.info("Pokrećem I/O nit")
-            self.worker_thread.start()
+            try:
+                self.worker_thread.start()
+            except RuntimeError as re:
+                self.logger.critical(f"Greška pri pokretanju I/O niti: {re}")
 
             self.logger.info("Plugin MeritMonitor pokrenut")
         except Exception as e:
@@ -297,6 +302,7 @@ class MeritMonitor:
         self.should_run = False
 
     def worker(self):
+        self.logger.info("Učitavam poslednji PP ciklus ...")
         self.status_text.set("Učitavam poslednji PP ciklus ...")
         self.load_full_pp_cycle()
         self.logger.info("Poslednji PP ciklus učitan.")
@@ -305,7 +311,6 @@ class MeritMonitor:
             entry = None
 
             try:
-                self.logger.info(f"Blocking on queue: {type(self.journal_queue)}")
                 entry = self.journal_queue.get(block=True, timeout=5)
             except Empty:
                 pass
