@@ -11,7 +11,7 @@ from tkinter import StringVar, Toplevel, PhotoImage, Text
 import myNotebook as nb
 
 from queue import Queue, Empty
-from threading import Thread
+from threading import Thread, Event, Lock
 
 from meritmonitor.settings import Settings
 from meritmonitor.translations import Translations
@@ -45,14 +45,17 @@ class MeritMonitor:
     logger = None
     translations = None
     db = None
-
-    journal_queue: Queue = Queue()
-    should_run: bool = True
+    root = None
 
     def __init__(self, plugin_name: str, version: Version) -> None:
         self.plugin_name: str = plugin_name
         self.version: Version = version
 
+        self.status_text_lock = Lock()
+
+        self.journal_queue: Queue = Queue()
+        self.should_run: Event = Event()
+        self.should_run.set()
         self.worker_thread = Thread(target=self.worker, name='MeritMonitor worker')
         self.worker_thread.daemon = True
 
@@ -127,6 +130,7 @@ class MeritMonitor:
             try:
                 if filename.endswith('.lnk'):
                     continue
+                #self.logger.info(f"Processing journal: {filename}")
                 with open(filename, "r", encoding="utf-8") as f:
                     for line in f:
                         try:
@@ -170,6 +174,7 @@ class MeritMonitor:
         self.update_live_status()
 
     def get_plugin_frame(self, parent):
+        self.root = parent.winfo_toplevel()
         frame = tk.Frame(parent)
         self.last_frame = frame
         return self.populate_plugin_frame(frame)
@@ -222,7 +227,7 @@ class MeritMonitor:
     def update_live_status(self):
         total_p = sum(self.live_personal_by_system.values())
         total_s = sum(self.live_control_points_by_system.values())
-        self.status_text.set(f"Uživo: {int(total_p)} ličnih / {int(total_s)} sistemskih merita.")
+        self.set_status_text(f"Uživo: {int(total_p)} ličnih / {int(total_s)} sistemskih merita.")
 
     def show_preview_modal(self):
         text = self.generate_report_text()
@@ -258,7 +263,7 @@ class MeritMonitor:
     def post_to_discord(self, text: str):
         webhook_url = self.settings.get_webhook_url()
         if not webhook_url:
-            self.status_text.set(self.translations.translate("Webhook URL nije podešen."))
+            self.set_status_text(self.translations.translate("Webhook URL nije podešen."))
             return
 
         thursday = self.get_last_thursday()
@@ -288,38 +293,47 @@ class MeritMonitor:
 
         except requests.RequestException as e:
             error_message = self.translations.translate("Greška pri slanju:")
-            self.status_text.set(f"{error_message} {e}")
+            self.set_status_text(f"{error_message} {e}")
 
         self.logger.info(response)
         res_json = response.json()
         new_message_id = res_json.get("id")
         self.db.upsert_discord_message(timestamp, new_message_id, message_hash)
         status_text = "Discord poruka ažurirana." if message_id else "Uspešno poslato na Discord."
-        self.status_text.set(self.translations.translate(status_text))
+        self.set_status_text(self.translations.translate(status_text))
 
     def shut_down(self):
-        self.should_run = False
-        self.worker_thread.join()
+        self.should_run.clear()
+        self.worker_thread.join(timeout=10)
 
     def worker(self):
         self.logger.info("Učitavam poslednji PP ciklus ...")
-        self.status_text.set("Učitavam poslednji PP ciklus ...")
+        self.set_status_text("Učitavam poslednji PP ciklus ...")
         self.load_full_pp_cycle()
         self.logger.info("Poslednji PP ciklus učitan.")
-        self.status_text.set("Poslednji PP ciklus učitan.")
-        while self.should_run:
+        self.set_status_text("Poslednji PP ciklus učitan.")
+        while self.should_run.is_set():
             entry = None
             system = None
 
             try:
-                system, entry = self.journal_queue.get(block=True, timeout=5)
+                system, entry = self.journal_queue.get(block=True, timeout=2)
             except Empty:
                 pass
 
             if entry:
                 try:
                     self.process_journal_entry(entry, system)
+                    self.update_live_status()
                 except Exception as e:
                     self.logger.error(f"Greška u journal_entry: {e}")
 
-            self.update_live_status()
+    def set_status_text(self, new_text: str):
+        def update():
+            self.status_text.set(new_text)
+            self.logger.info(f"Status updated: {new_text}")
+        if not self.root:
+            self.logger.warning(f"No root widget: {new_text}")
+            return
+        with self.status_text_lock:
+            self.root.after(0, update)
