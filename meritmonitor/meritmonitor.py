@@ -299,6 +299,7 @@ class MeritMonitor:
 
     def shut_down(self):
         self.should_run = False
+        self.worker_thread.join()
 
     def worker(self):
         self.logger.info("Učitavam poslednji PP ciklus ...")
