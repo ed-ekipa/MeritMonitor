@@ -19,15 +19,6 @@ class Database:
         cursor = conn.cursor()
 
         cursor.execute("""
-        CREATE TABLE merits (
-            timestamp INTEGER NOT NULL,
-            system_name TEXT NOT NULL,
-            merits INTEGER NOT NULL CHECK (merits >= 0),
-            PRIMARY KEY (timestamp, system_name)
-        );
-        """)
-
-        cursor.execute("""
         CREATE TABLE discord (
             timestamp INTEGER NOT NULL PRIMARY KEY,
             message_id TEXT NOT NULL,
@@ -41,18 +32,6 @@ class Database:
     def close(self):
         if self.conn:
             self.conn.close()
-
-    def upsert_merit(self, timestamp: int, system_name: str, merits: int):
-        self.conn.execute(
-            """
-            INSERT INTO merits (timestamp, system_name, merits)
-            VALUES (?, ?, ?)
-            ON CONFLICT(timestamp, system_name) DO UPDATE SET
-                merits = excluded.merits
-            """,
-            (timestamp, system_name, merits)
-        )
-        self.conn.commit()
 
     def upsert_discord_message(self, timestamp: int, message_id: str, message_hash: str):
         logger = get_logger()
