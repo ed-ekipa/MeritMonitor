@@ -1,8 +1,9 @@
 import glob
 import os
 import json
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 import hashlib
+from time import sleep
 
 from semantic_version import Version
 import requests
@@ -46,6 +47,8 @@ class MeritMonitor:
     translations = None
     db = None
     root = None
+    last_discord_update = datetime.now()
+    notified_of_missing_webhook = False
 
     def __init__(self, plugin_name: str, version: Version) -> None:
         self.plugin_name: str = plugin_name
@@ -199,10 +202,11 @@ class MeritMonitor:
 
     def on_webhook_entry_change(self, *args):
         self.settings.set_webhook_url(self.webhook_entry_var.get())
+        self.notified_of_missing_webhook = False
 
     def on_preferences_closed(self, cmdr, is_beta):
         self.settings.set_language(self.lang_var.get())
-        self.settings.set_webhook_url(self.webhook_entry_var.get())
+        self.on_webhook_entry_change()
         self.save_settings(self.settings.as_dict())
 
     def refresh_gui(self):
@@ -250,8 +254,9 @@ class MeritMonitor:
 
     def post_to_discord(self, text: str):
         webhook_url = self.settings.get_webhook_url()
-        if not webhook_url:
+        if not webhook_url and not self.notified_of_missing_webhook:
             self.set_status_text(self.translations.translate("Webhook URL nije podešen."))
+            self.notified_of_missing_webhook = True
             return
 
         thursday = self.get_last_thursday()
@@ -300,6 +305,8 @@ class MeritMonitor:
         self.load_full_pp_cycle()
         self.logger.info("Poslednji PP ciklus učitan.")
         self.set_status_text("Poslednji PP ciklus učitan.")
+        self.background_discord_update()
+        self.logger.info("Glavna petlja I/O niti")
         while self.should_run.is_set():
             entry = None
             system = None
@@ -313,6 +320,7 @@ class MeritMonitor:
                 try:
                     self.process_journal_entry(entry, system)
                     self.update_live_status()
+                    self.background_discord_update()
                 except Exception as e:
                     self.logger.error(f"Greška u journal_entry: {e}")
 
@@ -325,3 +333,13 @@ class MeritMonitor:
             return
         with self.status_text_lock:
             self.root.after(0, update)
+
+    def delay_discord_update(self):
+        delay_seconds = 1
+        if datetime.now() - self.last_discord_update >= timedelta(seconds=delay_seconds):
+            sleep(delay_seconds)
+
+    def background_discord_update(self):
+        self.delay_discord_update()
+        discord_message = self.generate_report_text()
+        self.post_to_discord(discord_message)
