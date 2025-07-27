@@ -1,0 +1,22 @@
+{
+	"Prikaži izveštaj": "Show report",
+	"Webhook": "Webhook",
+	"Učitaj ceo PP ciklus": "Load entire PP cycle",
+	"Webhook URL sačuvan.": "Webhook URL saved.",
+	"Podešavanje Discord Webhook-a": "Set Discord Webhook",
+	"Sačuvaj": "Save",
+	"Pregled Discord izveštaja": "Discord report overwiev",
+	"Pošalji na Discord": "Send to Discord",
+	"Otkaži": "Cancel",
+	"Sistemski meriti po sistemima:": "System control points by system:",
+	"Jezik": "Language",
+	"Discord poruka ažurirana.": "Discord report updated.",
+	"Uspešno poslato na Discord.": "Sent to Discord.",
+	"Greška": "Error",
+	"Greška pri slanju:": "Error sending:",
+	"Webhook URL nije podešen.": "Webhook URL not set.",
+	"Uživo": "live",
+	"ličnih /": "Merits /",
+	"sistemskih merita": "System control points.",
+	"PowerPlay Level": "PowerPlay Level"
+}
