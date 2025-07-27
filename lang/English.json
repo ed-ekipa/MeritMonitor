@@ -1,7 +1,8 @@
 {
 	"Prikaži izveštaj": "Show report",
 	"Webhook": "Webhook",
-	"Učitaj ceo PP ciklus": "Load entire PP cycle",
+	"Učitavam poslednji PP ciklus ...": "Loading latest PP cycle ...",
+	"Poslednji PP ciklus učitan.": "Latest PP cycle loaded.",
 	"Webhook URL sačuvan.": "Webhook URL saved.",
 	"Podešavanje Discord Webhook-a": "Set Discord Webhook",
 	"Sačuvaj": "Save",
