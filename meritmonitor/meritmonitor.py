@@ -173,8 +173,6 @@ class MeritMonitor:
         button_frame.pack(pady=5)
         tk.Button(button_frame, text=self.translations.translate("Prikaži izveštaj"), compound="left",
                    command=self.show_preview_modal).pack(side="left", padx=5)
-        #tk.Button(button_frame, text=self.translations.translate("Učitaj ceo PP ciklus"), compound="left",
-#                   command=self.load_full_pp_cycle).pack(side="left", padx=5)
 
         tk.Label(frame, textvariable=self.status_text).pack()
 
@@ -237,7 +235,6 @@ class MeritMonitor:
             self.post_to_discord(text)
             win.destroy()
 
-        #tk.Button(win, text=self.translations.translate("Pošalji na Discord"), command=send_now).pack(side="left", padx=10, pady=5)
         tk.Button(win, text=self.translations.translate("Otkaži"), command=win.destroy).pack(side="right", padx=10, pady=5)
 
     def generate_report_text(self) -> str:
