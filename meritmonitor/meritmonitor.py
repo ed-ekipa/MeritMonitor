@@ -160,7 +160,6 @@ class MeritMonitor:
 
     def journal_entry(self, cmdr, is_beta, system, station, entry, state):
         self.journal_queue.put((system, entry))
-        self.update_live_status()
 
     def get_plugin_frame(self, parent):
         self.root = parent.winfo_toplevel()
