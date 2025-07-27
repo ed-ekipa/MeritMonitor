@@ -217,7 +217,10 @@ class MeritMonitor:
     def update_live_status(self):
         total_p = sum(self.live_personal_by_system.values())
         total_s = sum(self.live_control_points_by_system.values())
-        self.set_status_text(f"Uživo: {int(total_p)} ličnih / {int(total_s)} sistemskih merita.")
+        live = self.translations.translate("Uživo")
+        merits = self.translations.translate("ličnih")
+        control_points = self.translations.translate("sistemskih merita")
+        self.set_status_text(f"{live}: {int(total_p)} {merits} / {int(total_s)} {control_points}.")
 
     def show_preview_modal(self):
         text = self.generate_report_text()
