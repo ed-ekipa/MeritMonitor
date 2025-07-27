@@ -87,8 +87,6 @@ class MeritMonitor:
     def init_files(self, plugin_dir: str) -> None:
         self.log_file = os.path.join(plugin_dir, "meritmonitor.log")
         self.settings_file = os.path.join(plugin_dir, "settings.json")
-        self.report_data_file = os.path.join(plugin_dir, "report_data.json")
-        self.lang_file = os.path.join(plugin_dir, "language.conf")
 
     def load_settings(self):
         if not os.path.exists(self.settings_file):
@@ -99,16 +97,6 @@ class MeritMonitor:
 
     def save_settings(self, data):
         with open(self.settings_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-
-    def load_previous_report_data(self):
-        if os.path.exists(self.report_data_file):
-            with open(self.report_data_file, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return {}
-
-    def save_current_report_data(self, data):
-        with open(self.report_data_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
     def get_journal_dir(self):
