@@ -75,8 +75,6 @@ class MeritMonitor:
 
             self.translations.load(self.settings.get_language())
 
-            self.db = Database(os.path.join(plugin_dir, "merits.db"))
-
             self.logger.info("Pokrećem I/O nit")
             try:
                 self.worker_thread.start()
@@ -236,7 +234,7 @@ class MeritMonitor:
             self.post_to_discord(text)
             win.destroy()
 
-        tk.Button(win, text=self.translations.translate("Pošalji na Discord"), command=send_now).pack(side="left", padx=10, pady=5)
+        #tk.Button(win, text=self.translations.translate("Pošalji na Discord"), command=send_now).pack(side="left", padx=10, pady=5)
         tk.Button(win, text=self.translations.translate("Otkaži"), command=win.destroy).pack(side="right", padx=10, pady=5)
 
     def generate_report_text(self) -> str:
@@ -300,6 +298,8 @@ class MeritMonitor:
         self.worker_thread.join(timeout=10)
 
     def worker(self):
+        self.logger.info("Inicijalizujem sqlite3 ...")
+        self.db = Database(os.path.join(self.plugin_dir, "merits.db"))
         self.logger.info("Učitavam poslednji PP ciklus ...")
         self.set_status_text("Učitavam poslednji PP ciklus ...")
         self.load_full_pp_cycle()
@@ -327,7 +327,6 @@ class MeritMonitor:
     def set_status_text(self, new_text: str):
         def update():
             self.status_text.set(new_text)
-            self.logger.info(f"Status updated: {new_text}")
         if not self.root:
             self.logger.warning(f"No root widget: {new_text}")
             return
@@ -340,6 +339,7 @@ class MeritMonitor:
             sleep(delay_seconds)
 
     def background_discord_update(self):
+        self.logger.info(f"Discord update")
         self.delay_discord_update()
         discord_message = self.generate_report_text()
         self.post_to_discord(discord_message)
