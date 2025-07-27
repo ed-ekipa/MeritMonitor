@@ -8,11 +8,11 @@ from time import sleep
 from semantic_version import Version
 import requests
 import tkinter as tk
-from tkinter import StringVar, Toplevel, PhotoImage, Text
+from tkinter import StringVar, Toplevel, Text
 import myNotebook as nb
 
 from queue import Queue, Empty
-from threading import Thread, Event, Lock
+from threading import Thread, Event
 
 from meritmonitor.settings import Settings
 from meritmonitor.translations import Translations
@@ -53,8 +53,6 @@ class MeritMonitor:
     def __init__(self, plugin_name: str, version: Version) -> None:
         self.plugin_name: str = plugin_name
         self.version: Version = version
-
-        self.status_text_lock = Lock()
 
         self.journal_queue: Queue = Queue()
         self.should_run: Event = Event()
@@ -329,8 +327,7 @@ class MeritMonitor:
         if not self.root:
             self.logger.warning(f"No root widget: {new_text}")
             return
-        with self.status_text_lock:
-            self.root.after(0, update)
+        self.root.after(0, update)
 
     def delay_discord_update(self):
         delay_seconds = 1
