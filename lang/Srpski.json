@@ -1,20 +1,22 @@
-Prikaži izveštaj: Prikaži izveštaj
-Webhook: Webhook
-Učitaj ceo PP ciklus: Učitaj ceo PP ciklus
-Webhook URL sačuvan.: Webhook URL sačuvan.
-Podešavanje Discord Webhook-a: Podešavanje Discord Webhook-a
-Sačuvaj: Sačuvaj
-Pregled Discord izveštaja: Pregled Discord izveštaja
-Pošalji na Discord: Pošalji na Discord
-Otkaži: Otkaži
-Sistemski meriti po sistemima:: Sistemski meriti po sistemima:
-Jezik: Jezik
-Discord poruka ažurirana.: Discord poruka ažurirana.
-Uspešno poslato na Discord.: Uspešno poslato na Discord.
-Greška: Greška
-Greška pri slanju:: Greška pri slanju:
-Webhook URL nije podešen.: Webhook URL nije podešen.
-Uživo: Uživo
-ličnih /: ličnih /
-sistemskih merita.: sistemskih merita.
-PowerPlay Level: PowerPlay Level
+{
+	"Prikaži izveštaj": "Prikaži izveštaj",
+	"Webhook": "Webhook",
+	"Učitaj ceo PP ciklus": "Učitaj ceo PP ciklus",
+	"Webhook URL sačuvan.": "Webhook URL sačuvan.",
+	"Podešavanje Discord Webhook-a": "Podešavanje Discord Webhook-a",
+	"Sačuvaj": "Sačuvaj",
+	"Pregled Discord izveštaja": "Pregled Discord izveštaja",
+	"Pošalji na Discord": "Pošalji na Discord",
+	"Otkaži": "Otkaži",
+	"Sistemski meriti po sistemima:": "Sistemski meriti po sistemima:",
+	"Jezik": "Jezik",
+	"Discord poruka ažurirana.": "Discord poruka ažurirana.",
+	"Uspešno poslato na Discord.": "Uspešno poslato na Discord.",
+	"Greška": "Greška",
+	"Greška pri slanju:": "Greška pri slanju:",
+	"Webhook URL nije podešen.": "Webhook URL nije podešen.",
+	"Uživo": "Uživo",
+	"ličnih /": "ličnih /",
+	"sistemskih merita.": "sistemskih merita.",
+	"PowerPlay Level": "PowerPlay Level"
+}
