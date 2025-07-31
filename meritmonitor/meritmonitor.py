@@ -317,7 +317,8 @@ class MeritMonitor:
                 try:
                     self.process_journal_entry(entry, system)
                     self.update_live_status()
-                    self.background_discord_update()
+                    if self.live_control_points_by_system:
+                        self.background_discord_update()
                 except Exception as e:
                     self.logger.error(f"Greška u journal_entry: {e}")
 
