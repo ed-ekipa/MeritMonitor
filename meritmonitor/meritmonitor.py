@@ -166,12 +166,21 @@ class MeritMonitor:
         return self.populate_plugin_frame(frame)
 
     def populate_plugin_frame(self, frame):
+        logo_path = os.path.join(self.plugin_dir, "logo.png")
+        logo = tk.PhotoImage(file=logo_path)
+        logo_label = tk.Label(frame, image=logo)
+        logo_label.pack()
+        logo_label.image = logo
+
         button_frame = tk.Frame(frame)
         button_frame.pack(pady=5)
         tk.Button(button_frame, text=self.translations.translate("Prikaži izveštaj"), compound="left",
                    command=self.show_preview_modal).pack(side="left", padx=5)
 
         tk.Label(frame, textvariable=self.status_text).pack()
+
+        horizontal_rule = tk.Frame(frame, height=1, bd=0, bg="grey")
+        horizontal_rule.pack(fill="x", padx=0, pady=10)
 
         self.update_live_status()
         return frame
