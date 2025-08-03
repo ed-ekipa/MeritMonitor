@@ -98,11 +98,11 @@ class MeritMonitor:
         with open(self.settings_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
-    def get_journal_dir(self):
+    def get_journal_dir(self) -> str:
         user_dir = os.environ.get('USERPROFILE')
         return os.path.join(user_dir, "Saved Games", "Frontier Developments", "Elite Dangerous")
 
-    def get_last_thursday(self):
+    def get_last_thursday(self) -> datetime:
         now = datetime.utcnow()
         thursday = now - timedelta(days=(now.weekday() + 4) % 7)
         thursday = thursday.replace(hour=7, minute=0, second=0, microsecond=0)
@@ -116,6 +116,9 @@ class MeritMonitor:
         for filename in sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log*"))):
             try:
                 if filename.endswith('.lnk'):
+                    continue
+                mtime = datetime.utcfromtimestamp(os.path.getmtime(filename))
+                if mtime < timestamp:
                     continue
                 #self.logger.info(f"Processing journal: {filename}")
                 with open(filename, "r", encoding="utf-8") as f:
