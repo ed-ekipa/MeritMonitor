@@ -14,6 +14,8 @@ import myNotebook as nb
 from queue import Queue, Empty
 from threading import Thread, Event
 
+from config import get_config # from EDMC
+
 from meritmonitor.settings import Settings
 from meritmonitor.translations import Translations
 from meritmonitor.database import Database
@@ -23,7 +25,7 @@ from meritmonitor.logger import get_logger, set_global_log_file
 
 class MeritMonitor:
     webhook_entry = None
-    settings = Settings({})
+    settings = Settings("")
     lang_var = StringVar(value=settings.get_language())
     webhook_entry_var = StringVar(value=settings.get_webhook_url())
 
@@ -67,7 +69,7 @@ class MeritMonitor:
         set_global_log_file(self.log_file)
         self.logger = get_logger()
         try:
-            self.settings = Settings(self.load_settings())
+            self.settings = Settings(self.settings_file)
             self.lang_var.set(self.settings.get_language())
             self.webhook_entry_var.set(self.settings.get_webhook_url())
 
@@ -87,20 +89,27 @@ class MeritMonitor:
         self.log_file = os.path.join(plugin_dir, "meritmonitor.log")
         self.settings_file = os.path.join(plugin_dir, "settings.json")
 
-    def load_settings(self):
-        if not os.path.exists(self.settings_file):
-            with open(self.settings_file, "w", encoding="utf-8") as f:
-                json.dump({"webhook_url": ""}, f, indent=2)
-        with open(self.settings_file, "r", encoding="utf-8") as f:
-            return json.load(f)
-
-    def save_settings(self, data):
-        with open(self.settings_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-
     def get_journal_dir(self) -> str:
-        user_dir = os.environ.get('USERPROFILE')
-        return os.path.join(user_dir, "Saved Games", "Frontier Developments", "Elite Dangerous")
+        self.logger.info("Trying to get custom journal directory from EDMC")
+        journal_dir = ""
+        try:
+            journal_dir = get_config().get_str("journaldir")
+            if journal_dir is None or journal_dir == "":
+                self.logger.info("Trying to get default journal directory from EDMC")
+                journal_dir = get_config().default_journal_dir
+        except Exception as e:
+            self.logger.error(f"exception getting journal_dir: {repr(e)} [{e}]")
+
+        if isinstance(journal_dir, str) and os.path.isdir(journal_dir):
+            self.logger.info(f"Using EDMC journal directory: {journal_dir}")
+        else:
+            user_dir = os.environ.get('USERPROFILE')
+            if user_dir is None:
+                self.logger.critical("Unable to find journal directory!")
+                return ""
+            journal_dir = os.path.join(user_dir, "Saved Games", "Frontier Developments", "Elite Dangerous")
+            self.logger.info(f"Falling back to default journal directory: {journal_dir}")
+        return journal_dir
 
     def get_last_thursday(self) -> datetime:
         now = datetime.utcnow()
@@ -111,9 +120,9 @@ class MeritMonitor:
     def load_merits_since(self, timestamp):
         self.live_personal_by_system = {}
         self.live_control_points_by_system = {}
-        journal_dir = self.get_journal_dir()
+        journal_dir = os.path.expanduser(self.get_journal_dir())
 
-        for filename in sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log*"))):
+        for filename in sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log"))):
             try:
                 if filename.endswith('.lnk'):
                     continue
@@ -212,7 +221,7 @@ class MeritMonitor:
     def on_preferences_closed(self, cmdr, is_beta):
         self.settings.set_language(self.lang_var.get())
         self.on_webhook_entry_change()
-        self.save_settings(self.settings.as_dict())
+        self.settings.save_settings(self.settings_file)
 
     def refresh_gui(self):
         self.translations.load(self.lang_var.get())
