@@ -338,8 +338,7 @@ class MeritMonitor:
                 try:
                     self.process_journal_entry(entry, system)
                     self.update_live_status()
-                    if self.live_control_points_by_system:
-                        self.background_discord_update()
+                    self.background_discord_update()
                 except Exception as e:
                     self.logger.error(f"Greška u journal_entry: {e}")
 
@@ -357,6 +356,9 @@ class MeritMonitor:
             sleep(delay_seconds)
 
     def background_discord_update(self):
+        if sum(self.live_control_points_by_system.values()) == 0:
+            self.logger.info(f"Nothing to send to Discord")
+            return
         self.logger.info(f"Discord update")
         self.delay_discord_update()
         discord_message = self.generate_report_text()
