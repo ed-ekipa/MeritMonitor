@@ -16,10 +16,11 @@ from threading import Thread, Event
 
 from config import get_config # from EDMC
 
+from meritmonitor.meritstore import MeritStore
 from meritmonitor.settings import Settings
 from meritmonitor.translations import Translations
 from meritmonitor.database import Database
-
+from meritmonitor.thursday import get_last_thursday
 from meritmonitor.logger import get_logger, set_global_log_file
 
 
@@ -38,8 +39,7 @@ class MeritMonitor:
     }
 
     personal_total = 0
-    live_personal_by_system = {}
-    live_control_points_by_system = {}
+    merit_store = MeritStore()
     last_seen_system = "Nepoznato"
     last_seen_system_state = "Unoccupied"
     last_frame = None
@@ -111,15 +111,8 @@ class MeritMonitor:
             self.logger.info(f"Falling back to default journal directory: {journal_dir}")
         return journal_dir
 
-    def get_last_thursday(self) -> datetime:
-        now = datetime.utcnow()
-        thursday = now - timedelta(days=(now.weekday() + 4) % 7)
-        thursday = thursday.replace(hour=7, minute=0, second=0, microsecond=0)
-        return thursday
-
     def load_merits_since(self, timestamp):
-        self.live_personal_by_system = {}
-        self.live_control_points_by_system = {}
+        self.merit_store = MeritStore()
         journal_dir = os.path.expanduser(self.get_journal_dir())
 
         for filename in sorted(glob.glob(os.path.join(journal_dir, "Journal.*.log"))):
@@ -149,7 +142,7 @@ class MeritMonitor:
         self.load_merits_since(today)
 
     def load_full_pp_cycle(self):
-        thursday = self.get_last_thursday()
+        thursday = get_last_thursday()
         self.load_merits_since(thursday)
 
     def process_journal_entry(self, entry, system=None):
@@ -164,8 +157,8 @@ class MeritMonitor:
             gross_merits_gained = round(net_merits_gained / multiplier)
             system_control_points_gained = round(gross_merits_gained * 0.25)
 
-            self.live_personal_by_system[self.last_seen_system] = self.live_personal_by_system.get(self.last_seen_system, 0) + net_merits_gained
-            self.live_control_points_by_system[self.last_seen_system] = self.live_control_points_by_system.get(self.last_seen_system, 0) + system_control_points_gained
+            self.merit_store.add_personal(self.last_seen_system, net_merits_gained)
+            self.merit_store.add_control_points(self.last_seen_system, system_control_points_gained)
             self.logger.info(f"Dodato: {net_merits_gained} merita za {self.last_seen_system} ({self.last_seen_system_state})")
 
     def journal_entry(self, cmdr, is_beta, system, station, entry, state):
@@ -231,8 +224,8 @@ class MeritMonitor:
             self.populate_plugin_frame(self.last_frame)
 
     def update_live_status(self):
-        total_p = sum(self.live_personal_by_system.values())
-        total_s = sum(self.live_control_points_by_system.values())
+        total_p = self.merit_store.sum_personal()
+        total_s = self.merit_store.sum_system()
         live = self.translations.translate("Uživo")
         merits = self.translations.translate("ličnih")
         control_points = self.translations.translate("sistemskih merita")
@@ -257,8 +250,9 @@ class MeritMonitor:
 
     def generate_report_text(self) -> str:
         text = f"📊 **{self.translations.translate('Sistemski meriti po sistemima:')}**\n\n"
-        for system in sorted(self.live_control_points_by_system):
-            s = int(self.live_control_points_by_system[system])
+        live_control_points_by_system = self.merit_store.get_current_merits_by_system()
+        for system in sorted(live_control_points_by_system):
+            s = int(live_control_points_by_system[system])
             text += f"- `{system}`: **{s}**\n"
         return text
 
@@ -275,7 +269,7 @@ class MeritMonitor:
             self.notified_of_missing_webhook = True
             return
 
-        thursday = self.get_last_thursday()
+        thursday = get_last_thursday()
         timestamp = int(thursday.timestamp())
 
         message_hash = self.hash_message(text)
@@ -356,7 +350,7 @@ class MeritMonitor:
             sleep(delay_seconds)
 
     def background_discord_update(self):
-        if sum(self.live_control_points_by_system.values()) == 0:
+        if self.merit_store.sum_system() == 0:
             self.logger.info(f"Nothing to send to Discord")
             return
         self.logger.info(f"Discord update")
