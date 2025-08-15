@@ -16,6 +16,7 @@ from threading import Thread, Event
 
 from config import get_config # from EDMC
 
+from meritmonitor.meritcalculator import control_points_from_merits_gained
 from meritmonitor.meritstore import MeritStore
 from meritmonitor.settings import Settings
 from meritmonitor.translations import Translations
@@ -29,14 +30,6 @@ class MeritMonitor:
     settings = Settings("")
     lang_var = StringVar(value=settings.get_language())
     webhook_entry_var = StringVar(value=settings.get_webhook_url())
-
-    state_table = {
-        "Unoccupied": 1.00,
-        "Exploited": 0.65,
-        "Fortified": 0.65,
-        "Stronghold": 0.65,
-        "Controlled": 0.65
-    }
 
     personal_total = 0
     merit_store = MeritStore()
@@ -152,10 +145,8 @@ class MeritMonitor:
             self.last_seen_system_state = entry.get("PowerplayState", self.last_seen_system_state)
         elif event in ["PowerplayMerits"]:
             net_merits_gained = entry.get("MeritsGained") or 0
-            multiplier = self.state_table.get(self.last_seen_system_state, 1.0)
 
-            gross_merits_gained = round(net_merits_gained / multiplier)
-            system_control_points_gained = round(gross_merits_gained * 0.25)
+            system_control_points_gained = control_points_from_merits_gained(self.last_seen_system_state, net_merits_gained)
 
             self.merit_store.add_personal(self.last_seen_system, net_merits_gained)
             self.merit_store.add_control_points(self.last_seen_system, system_control_points_gained)
