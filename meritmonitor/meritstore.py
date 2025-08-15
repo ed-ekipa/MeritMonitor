@@ -33,8 +33,8 @@ class MeritStore:
 
         return sum(self.live_control_points_by_system[weekly_key()].values())
 
-    def get_current_merits_by_system(self):
+    def get_live_control_points_by_system(self):
         this_week = weekly_key()
-        self.live_personal_by_system.setdefault(this_week, {})
+        self.live_control_points_by_system.setdefault(this_week, {})
 
-        return self.live_personal_by_system[this_week]
+        return self.live_control_points_by_system[this_week]

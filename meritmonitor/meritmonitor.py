@@ -250,7 +250,7 @@ class MeritMonitor:
 
     def generate_report_text(self) -> str:
         text = f"📊 **{self.translations.translate('Sistemski meriti po sistemima:')}**\n\n"
-        live_control_points_by_system = self.merit_store.get_current_merits_by_system()
+        live_control_points_by_system = self.merit_store.get_live_control_points_by_system()
         for system in sorted(live_control_points_by_system):
             s = int(live_control_points_by_system[system])
             text += f"- `{system}`: **{s}**\n"
