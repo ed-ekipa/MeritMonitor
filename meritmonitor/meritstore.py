@@ -21,20 +21,24 @@ class MeritStore:
 
         self.live_control_points_by_system[this_week][system] += amount
 
-    def sum_personal(self):
+    def sum_personal(self) -> int:
         this_week = weekly_key()
         self.live_personal_by_system.setdefault(this_week, {})
 
         return sum(self.live_personal_by_system[this_week].values())
 
-    def sum_system(self):
+    def sum_system(self) -> int:
         this_week = weekly_key()
         self.live_control_points_by_system.setdefault(this_week, {})
 
         return sum(self.live_control_points_by_system[weekly_key()].values())
 
-    def get_live_control_points_by_system(self):
+    def get_control_points_by_system_report(self) -> str:
         this_week = weekly_key()
         self.live_control_points_by_system.setdefault(this_week, {})
-
-        return self.live_control_points_by_system[this_week]
+        control_points_by_system = self.live_control_points_by_system[this_week]
+        text = ""
+        for system in sorted(control_points_by_system):
+            s = int(control_points_by_system[system])
+            text += f"- `{system}`: **{s}**\n"
+        return text
