@@ -224,7 +224,6 @@ class MeritMonitor:
 
     def show_preview_modal(self):
         text = self.generate_report_text()
-
         win = Toplevel()
         win.title(self.translations.translate("Pregled Discord izveštaja"))
         win.geometry("500x500")
@@ -232,11 +231,6 @@ class MeritMonitor:
         txt.insert("1.0", text)
         txt.config(state="disabled")
         txt.pack(padx=10, pady=10, fill="both", expand=True)
-
-        def send_now():
-            self.post_to_discord(text)
-            win.destroy()
-
         tk.Button(win, text=self.translations.translate("Otkaži"), command=win.destroy).pack(side="right", padx=10, pady=5)
 
     def generate_report_text(self) -> str:
