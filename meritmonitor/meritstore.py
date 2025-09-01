@@ -39,6 +39,6 @@ class MeritStore:
         control_points_by_system = self.live_control_points_by_system[this_week]
         text = ""
         for system in sorted(control_points_by_system):
-            s = int(control_points_by_system[system])
+            s = control_points_by_system[system]
             text += f"- `{system}`: **{s}**\n"
         return text
