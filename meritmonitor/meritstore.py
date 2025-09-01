@@ -31,7 +31,7 @@ class MeritStore:
         this_week = weekly_key()
         self.live_control_points_by_system.setdefault(this_week, {})
 
-        return sum(self.live_control_points_by_system[weekly_key()].values())
+        return sum(self.live_control_points_by_system[this_week].values())
 
     def get_control_points_by_system_report(self) -> str:
         this_week = weekly_key()
