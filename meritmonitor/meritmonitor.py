@@ -220,7 +220,7 @@ class MeritMonitor:
         live = self.translations.translate("Uživo")
         merits = self.translations.translate("ličnih")
         control_points = self.translations.translate("sistemskih merita")
-        self.set_status_text(f"{live}: {int(total_p)} {merits} / {int(total_s)} {control_points}.")
+        self.set_status_text(f"{live}: {total_p} {merits} / {total_s} {control_points}.")
 
     def show_preview_modal(self):
         text = self.generate_report_text()
