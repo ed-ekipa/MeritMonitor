@@ -5,14 +5,15 @@ from datetime import datetime, timedelta
 import hashlib
 from time import sleep
 
-from semantic_version import Version
-import requests
-import tkinter as tk
-from tkinter import StringVar, Toplevel, Text
-import myNotebook as nb
-
 from queue import Queue, Empty
 from threading import Thread, Event
+
+import tkinter as tk
+from tkinter import StringVar, Toplevel, Text
+
+import requests
+import myNotebook as nb
+from semantic_version import Version
 
 from config import get_config # from EDMC
 
@@ -333,9 +334,9 @@ class MeritMonitor:
 
     def background_discord_update(self):
         if self.merit_store.sum_system() == 0:
-            self.logger.info(f"Nothing to send to Discord")
+            self.logger.info("Nothing to send to Discord")
             return
-        self.logger.info(f"Discord update")
+        self.logger.info("Discord update")
         self.delay_discord_update()
         discord_message = self.generate_report_text()
         self.post_to_discord(discord_message)
