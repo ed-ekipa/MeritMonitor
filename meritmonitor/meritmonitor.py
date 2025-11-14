@@ -51,6 +51,7 @@ class MeritMonitor:
         self.version: Version = version
 
         self.journal_queue: Queue = Queue()
+        self.ui_update_queue: Queue = Queue()
         self.should_run: Event = Event()
         self.should_run.set()
         self.worker_thread = Thread(target=self.worker, name='MeritMonitor worker')
@@ -158,6 +159,7 @@ class MeritMonitor:
 
     def get_plugin_frame(self, parent):
         self.root = parent.winfo_toplevel()
+        self.schedule_next_ui_update()
         frame = tk.Frame(parent)
         self.last_frame = frame
         return self.populate_plugin_frame(frame)
@@ -215,14 +217,6 @@ class MeritMonitor:
                 widget.destroy()
             self.populate_plugin_frame(self.last_frame)
 
-    def update_live_status(self):
-        total_p = self.merit_store.sum_personal()
-        total_s = self.merit_store.sum_system()
-        live = self.translations.translate("Uživo")
-        merits = self.translations.translate("ličnih")
-        control_points = self.translations.translate("sistemskih merita")
-        self.set_status_text(f"{live}: {total_p} {merits} / {total_s} {control_points}.")
-
     def show_preview_modal(self):
         text = self.generate_report_text()
         win = Toplevel()
@@ -238,6 +232,17 @@ class MeritMonitor:
         text = f"📊 **{self.translations.translate('Sistemski meriti po sistemima:')}**\n\n"
         text += self.merit_store.get_control_points_by_system_report()
         return text
+
+    def render_live_status_text(self):
+        total_p = self.merit_store.sum_personal()
+        total_s = self.merit_store.sum_system()
+        live = self.translations.translate("Uživo")
+        merits = self.translations.translate("ličnih")
+        control_points = self.translations.translate("sistemskih merita")
+        return f"{live}: {total_p} {merits} / {total_s} {control_points}."
+
+    def update_live_status(self):
+        self.set_status_text(self.render_live_status_text())
 
     def hash_message(self, text: str) -> str:
         h = hashlib.new('sha256')
@@ -320,12 +325,7 @@ class MeritMonitor:
                     self.logger.error(f"Greška u journal_entry: {e}")
 
     def set_status_text(self, new_text: str):
-        def update():
-            self.status_text.set(new_text)
-        if not self.root:
-            self.logger.warning(f"No root widget: {new_text}")
-            return
-        self.root.after(0, update)
+        self.ui_update_queue.put(new_text)
 
     def delay_discord_update(self):
         delay_seconds = 1
@@ -340,3 +340,17 @@ class MeritMonitor:
         self.delay_discord_update()
         discord_message = self.generate_report_text()
         self.post_to_discord(discord_message)
+
+    def consume_ui_update_queue(self):
+        try:
+            msg = self.ui_update_queue.get_nowait()
+            self.status_text.set(msg)
+        except Empty:
+            self.update_live_status()
+        self.schedule_next_ui_update()
+
+    def schedule_next_ui_update(self):
+        if self.root:
+            self.root.after(5000, self.consume_ui_update_queue)
+        else:
+            self.logger.error(f"No root widget")
