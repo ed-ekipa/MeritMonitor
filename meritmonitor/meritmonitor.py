@@ -196,7 +196,7 @@ class MeritMonitor:
         current_row += 1
         nb.Label(frame, text=self.translations.translate("Webhook") + ": ").grid(row=current_row, sticky="w")
         self.webhook_entry_var.trace_add("write", self.on_webhook_entry_change)
-        self.webhook_entry = nb.Entry(frame, width=40, textvariable=self.webhook_entry_var)
+        self.webhook_entry = nb.EntryMenu(frame, width=40, textvariable=self.webhook_entry_var)
         self.webhook_entry.grid(row=current_row, column=1)
 
         return frame
