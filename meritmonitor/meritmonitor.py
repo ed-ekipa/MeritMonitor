@@ -1,7 +1,7 @@
 import glob
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 from time import sleep
 
@@ -114,7 +114,7 @@ class MeritMonitor:
             try:
                 if filename.endswith('.lnk'):
                     continue
-                mtime = datetime.utcfromtimestamp(os.path.getmtime(filename))
+                mtime = datetime.fromtimestamp(os.path.getmtime(filename), tz=timezone.utc)
                 if mtime < timestamp:
                     continue
                 #self.logger.info(f"Processing journal: {filename}")
